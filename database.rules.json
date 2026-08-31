@@ -16,6 +16,9 @@
     "conversations": { "$id": { ".read": "auth != null && data.child('members').child(auth.uid).val() === true", ".write": "auth != null && (data.child('members').child(auth.uid).val() === true || newData.child('members').child(auth.uid).val() === true)" } },
     "messages": { "$id": { ".read": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true", ".indexOn": ["createdAt"], "$messageId": { ".write": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true && newData.child('senderId').val() === auth.uid" } } },
     "notifications": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".indexOn": ["createdAt"], "$id": { ".write": "auth != null && (auth.uid === $uid || newData.child('actorId').val() === auth.uid)" } } },
+    "aiThreads": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", ".indexOn": ["updatedAt"] } },
+    "aiMessages": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", "$threadId": { ".indexOn": ["createdAt"] } } },
+    "supportTickets": { "$uid": { ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".write": "auth != null && auth.uid === $uid", ".indexOn": ["updatedAt"] } },
     "reports": { "$id": { ".write": "auth != null && newData.child('reporterId').val() === auth.uid", ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" } }
   }
 }

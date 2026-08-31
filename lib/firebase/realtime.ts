@@ -2,10 +2,13 @@ import { DataSnapshot,equalTo,get,limitToLast,onValue,orderByChild,push,query,re
 import { realtimeDb } from './client';
 export type UserProfile={uid:string;username:string;displayName:string;bio?:string;avatarUrl?:string;createdAt?:number;role?:'user'|'admin';suspended?:boolean};
 export type RealtimePost={id:string;authorId:string;authorName:string;username:string;text:string;media?:string[];createdAt:number;replyTo?:string|null;quotePostId?:string|null;counts:{likes:number;replies:number;reposts:number;views:number}};
-export type Notification={id:string;actorId:string;actorName?:string;type:'like'|'reply'|'repost'|'follow'|'mention';postId?:string;createdAt:number;read?:boolean};
+export type Notification={id:string;actorId:string;actorName?:string;type:'like'|'reply'|'repost'|'follow'|'mention'|'login';postId?:string;createdAt:number;read?:boolean};
 export type Conversation={id:string;members:Record<string,boolean>;memberProfiles?:Record<string,{displayName:string;username:string}>;lastMessage?:string;lastMessageAt?:number};
 export type ChatMessage={id:string;senderId:string;text:string;createdAt:number;seen?:boolean};
-const needDb=()=>{if(!realtimeDb)throw new Error('Firebase Realtime Database is not configured');return realtimeDb};
+export type AiThread={id:string;title:string;createdAt:number;updatedAt:number};
+export type AiMessage={id:string;role:'user'|'assistant';text:string;createdAt:number};
+export type SupportTicket={id:string;subject:string;message:string;status:'open'|'in-progress'|'resolved';createdAt:number;updatedAt:number};
+const needDb=()=>{if(!realtimeDb)throw new Error('VAYXO live data is not configured');return realtimeDb};
 const list=<T>(snap:DataSnapshot)=>Object.entries(snap.val()||{}).map(([id,value])=>({id,...value as T}));
 export async function upsertProfile(profile:UserProfile){const db=needDb(),existing=await get(ref(db,`users/${profile.uid}`)),previous=existing.val() as UserProfile|null,next={...previous,...profile,createdAt:previous?.createdAt||Date.now()};const changes:Record<string,unknown>={[`users/${profile.uid}`]:next,[`usernames/${profile.username.toLowerCase()}`]:profile.uid};if(previous?.username&&previous.username!==profile.username)changes[`usernames/${previous.username.toLowerCase()}`]=null;await update(ref(db),changes)}
 export function subscribeProfile(uid:string,cb:(value:UserProfile|null)=>void){return onValue(ref(needDb(),`users/${uid}`),s=>cb(s.exists()?s.val():null))}
@@ -27,5 +30,12 @@ export async function ensureConversation(me:UserProfile,other:UserProfile){const
 export function subscribeConversations(uid:string,cb:(items:Conversation[])=>void){return onValue(ref(needDb(),`conversationsByUser/${uid}`),async s=>{const ids=Object.keys(s.val()||{}),snaps=await Promise.all(ids.map(id=>get(ref(needDb(),`conversations/${id}`))));cb(snaps.flatMap((x,i)=>x.exists()?[{id:ids[i],...x.val()}]:[]).sort((a,b)=>(b.lastMessageAt||0)-(a.lastMessageAt||0)) as Conversation[])})}
 export function subscribeMessages(id:string,cb:(items:ChatMessage[])=>void){const q=query(ref(needDb(),`messages/${id}`),orderByChild('createdAt'),limitToLast(100));return onValue(q,s=>cb(list<Omit<ChatMessage,'id'>>(s).sort((a,b)=>a.createdAt-b.createdAt) as ChatMessage[]))}
 export async function sendMessage(conversationId:string,uid:string,text:string){const db=needDb(),node=push(ref(db,`messages/${conversationId}`));await set(node,{senderId:uid,text:text.slice(0,2000),createdAt:serverTimestamp(),seen:false});await update(ref(db,`conversations/${conversationId}`),{lastMessage:text.slice(0,2000),lastMessageAt:serverTimestamp()})}
+export async function createAiThread(uid:string,title:string){const node=push(ref(needDb(),`aiThreads/${uid}`));await set(node,{title:title.slice(0,60),createdAt:serverTimestamp(),updatedAt:serverTimestamp()});return node.key!}
+export function subscribeAiThreads(uid:string,cb:(items:AiThread[])=>void){const q=query(ref(needDb(),`aiThreads/${uid}`),orderByChild('updatedAt'),limitToLast(50));return onValue(q,s=>cb(list<Omit<AiThread,'id'>>(s).reverse() as AiThread[]))}
+export function subscribeAiMessages(uid:string,threadId:string,cb:(items:AiMessage[])=>void){const q=query(ref(needDb(),`aiMessages/${uid}/${threadId}`),orderByChild('createdAt'),limitToLast(100));return onValue(q,s=>cb(list<Omit<AiMessage,'id'>>(s).sort((a,b)=>a.createdAt-b.createdAt) as AiMessage[]))}
+export async function sendAiMessage(uid:string,threadId:string,role:'user'|'assistant',text:string){const db=needDb();await push(ref(db,`aiMessages/${uid}/${threadId}`),{role,text:text.slice(0,8000),createdAt:serverTimestamp()});await update(ref(db,`aiThreads/${uid}/${threadId}`),{updatedAt:serverTimestamp()})}
+export async function deleteAiThread(uid:string,threadId:string){await update(ref(needDb()),{[`aiThreads/${uid}/${threadId}`]:null,[`aiMessages/${uid}/${threadId}`]:null})}
+export async function createSupportTicket(uid:string,subject:string,message:string){const node=push(ref(needDb(),`supportTickets/${uid}`));await set(node,{subject:subject.slice(0,120),message:message.slice(0,4000),status:'open',createdAt:serverTimestamp(),updatedAt:serverTimestamp()});return node.key}
+export function subscribeSupportTickets(uid:string,cb:(items:SupportTicket[])=>void){const q=query(ref(needDb(),`supportTickets/${uid}`),orderByChild('updatedAt'),limitToLast(30));return onValue(q,s=>cb(list<Omit<SupportTicket,'id'>>(s).reverse() as SupportTicket[]))}
 export async function adminDeletePost(postId:string){await set(ref(needDb(),`posts/${postId}`),null)}
 export async function adminSetSuspended(uid:string,suspended:boolean){await update(ref(needDb(),`users/${uid}`),{suspended})}
