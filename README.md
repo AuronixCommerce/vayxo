@@ -1,4 +1,4 @@
-# eX
+# VAYXO.online
 
 Production-oriented social web app built with TypeScript, the Next App Router-compatible Vinext runtime, Tailwind CSS, Firebase Authentication + Realtime Database, Framer Motion, Groq AI, and configurable S3-compatible media storage.
 
