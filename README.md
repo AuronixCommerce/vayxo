@@ -1,6 +1,6 @@
 # VAYXO.online
 
-Production-oriented social web app built with TypeScript, the Next App Router-compatible Vinext runtime, Tailwind CSS, Firebase Authentication + Realtime Database, Framer Motion, Groq AI, and configurable S3-compatible media storage.
+Production-oriented social web app built with Next.js 16 App Router, TypeScript, Tailwind CSS, Firebase Authentication + Realtime Database, Framer Motion, Groq AI, and configurable S3-compatible media storage.
 
 ## Setup
 
@@ -21,8 +21,8 @@ Set the `S3_*` values for Cloudflare R2 or another S3-compatible service. Produc
 
 ## Deployment
 
-For Vercel, import the repository, add every environment value, and deploy. Use Node 22+. Keep Firebase and Groq secrets server-side. The included database rules enforce ownership and conversation membership; review them against your moderation and privacy policy before launch.
+For Vercel, import the repository with the root directory set to `/`, use the **Next.js** framework preset, leave the output directory at **Next.js default**, add every environment value, and deploy. The included `vercel.json` locks framework detection to Next.js. Use Node 22+. Keep Firebase and Groq secrets server-side. The included database rules enforce ownership and conversation membership; review them against your moderation and privacy policy before launch.
 
 ## Available routes
 
-`/home`, `/explore`, `/notifications`, `/messages`, `/i/bookmarks`, `/compose/post`, `/[username]`, `/[username]/status/[postId]`, `/settings/profile`, `/login`, and `/signup`.
+`/home`, `/explore`, `/notifications`, `/messages`, `/i/bookmarks`, `/compose/post`, `/[username]`, `/[username]/status/[postId]`, `/settings/profile`, `/login`, `/signup`, `/admin`, and `/legal`.
