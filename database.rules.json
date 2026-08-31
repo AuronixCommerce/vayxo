@@ -1,0 +1,16 @@
+{
+  "rules": {
+    ".read": false, ".write": false,
+    "users": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid", ".validate": "newData.hasChildren(['username','displayName'])" } },
+    "usernames": { "$username": { ".read": true, ".write": "auth != null && (!data.exists() || data.val() === auth.uid)", ".validate": "newData.val() === auth.uid" } },
+    "posts": { ".indexOn": ["createdAt", "authorId"], "$postId": { ".read": true, ".write": "auth != null && (!data.exists() || data.child('authorId').val() === auth.uid)", ".validate": "newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length <= 280" } },
+    "likes": { "$postId": { "$uid": { ".read": true, ".write": "auth != null && auth.uid === $uid", ".validate": "newData.val() === true || !newData.exists()" } } },
+    "reposts": { "$postId": { "$uid": { ".read": true, ".write": "auth != null && auth.uid === $uid" } } },
+    "bookmarks": { "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } } },
+    "following": { "$uid": { ".read": true, "$target": { ".write": "auth != null && auth.uid === $uid" } } },
+    "followers": { "$uid": { ".read": true, "$follower": { ".write": "auth != null && auth.uid === $follower" } } },
+    "conversations": { "$id": { ".read": "auth != null && data.child('members').child(auth.uid).val() === true", ".write": "auth != null && (data.child('members').child(auth.uid).val() === true || newData.child('members').child(auth.uid).val() === true)" } },
+    "messages": { "$conversationId": { ".indexOn": ["createdAt"], ".read": "auth != null && root.child('conversations').child($conversationId).child('members').child(auth.uid).val() === true", "$messageId": { ".write": "auth != null && root.child('conversations').child($conversationId).child('members').child(auth.uid).val() === true && newData.child('senderId').val() === auth.uid" } } },
+    "notifications": { "$uid": { ".read": "auth != null && auth.uid === $uid", "$id": { ".write": "auth != null && (auth.uid === $uid || newData.child('actorId').val() === auth.uid)" } } }
+  }
+}
