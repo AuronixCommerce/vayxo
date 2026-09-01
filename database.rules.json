@@ -19,70 +19,45 @@
       ".read": true,
       ".indexOn": ["createdAt", "authorId", "replyTo"],
       "$postId": {
-        ".write": "auth != null && (((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid) && root.child('users').child(auth.uid).child('suspended').val() !== true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && ((((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid) && root.child('users').child(auth.uid).child('suspended').val() !== true) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280)"
       }
     },
     "likes": {
       ".read": true,
-      "$postId": {
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true"
-        }
-      }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true" } }
     },
     "reposts": {
       ".read": true,
-      "$postId": {
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true"
-        }
-      }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true" } }
     },
     "bookmarks": {
-      "$postId": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      }
+      "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
     },
     "likesByUser": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        "$postId": { ".write": "auth != null && auth.uid === $uid" }
-      }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid" } }
     },
     "repostsByUser": {
-      "$uid": {
-        ".read": true,
-        "$postId": { ".write": "auth != null && auth.uid === $uid" }
-      }
+      "$uid": { ".read": true, "$postId": { ".write": "auth != null && auth.uid === $uid" } }
     },
     "bookmarksByUser": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        "$postId": { ".write": "auth != null && auth.uid === $uid" }
-      }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid" } }
     },
     "following": {
       "$uid": {
         ".read": true,
-        "$target": {
-          ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || root.child('users').child($target).child('accountVisibility').val() !== 'private')) || (auth.uid === $target && root.child('followRequests').child($target).child($uid).exists()))"
-        }
+        "$target": { ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || root.child('users').child($target).child('accountVisibility').val() !== 'private')) || (auth.uid === $target && root.child('followRequests').child($target).child($uid).exists()))" }
       }
     },
     "followers": {
       "$uid": {
         ".read": true,
-        "$follower": {
-          ".write": "auth != null && ((auth.uid === $follower && (!newData.exists() || root.child('users').child($uid).child('accountVisibility').val() !== 'private')) || (auth.uid === $uid && root.child('followRequests').child($uid).child($follower).exists()))"
-        }
+        "$follower": { ".write": "auth != null && ((auth.uid === $follower && (!newData.exists() || root.child('users').child($uid).child('accountVisibility').val() !== 'private')) || (auth.uid === $uid && root.child('followRequests').child($uid).child($follower).exists()))" }
       }
     },
     "followRequests": {
       "$target": {
+        ".read": "auth != null && auth.uid === $target",
         "$requester": {
           ".read": "auth != null && (auth.uid === $target || auth.uid === $requester)",
           ".write": "auth != null && ((auth.uid === $requester && root.child('users').child($target).child('accountVisibility').val() === 'private') || (auth.uid === $target && !newData.exists()))"
@@ -90,63 +65,36 @@
       }
     },
     "conversationsByUser": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        "$id": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('conversations').child($id).child('members').child(auth.uid).val() === true)"
-        }
-      }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", "$id": { ".write": "auth != null && (auth.uid === $uid || root.child('conversations').child($id).child('members').child(auth.uid).val() === true)" } }
     },
     "conversations": {
-      "$id": {
-        ".read": "auth != null && data.child('members').child(auth.uid).val() === true",
-        ".write": "auth != null && (data.child('members').child(auth.uid).val() === true || newData.child('members').child(auth.uid).val() === true)"
-      }
+      "$id": { ".read": "auth != null && data.child('members').child(auth.uid).val() === true", ".write": "auth != null && (data.child('members').child(auth.uid).val() === true || newData.child('members').child(auth.uid).val() === true)" }
     },
     "messages": {
       "$id": {
         ".read": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true",
         ".indexOn": ["createdAt"],
-        "$messageId": {
-          ".write": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true && newData.child('senderId').val() === auth.uid"
-        }
+        "$messageId": { ".write": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true && newData.child('senderId').val() === auth.uid" }
       }
     },
     "notifications": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".indexOn": ["createdAt"],
-        "$id": {
-          ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.child('actorId').val() === auth.uid))"
-        }
+        "$id": { ".write": "auth != null && (auth.uid === $uid || (!data.exists() && newData.child('actorId').val() === auth.uid))" }
       }
     },
     "aiThreads": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
-        ".indexOn": ["updatedAt"]
-      }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", ".indexOn": ["updatedAt"] }
     },
     "aiMessages": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
-        "$threadId": { ".indexOn": ["createdAt"] }
-      }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", "$threadId": { ".indexOn": ["createdAt"] } }
     },
     "supportTickets": {
-      "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".indexOn": ["updatedAt"]
-      }
+      "$uid": { ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".indexOn": ["updatedAt"] }
     },
     "reports": {
-      "$id": {
-        ".write": "auth != null && newData.child('reporterId').val() === auth.uid",
-        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
-      }
+      "$id": { ".write": "auth != null && newData.child('reporterId').val() === auth.uid", ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" }
     }
   }
 }
