@@ -1,15 +1,4 @@
 'use client';
-import {useEffect} from 'react';
-import {usePathname,useRouter} from 'next/navigation';
-import {motion} from 'framer-motion';
-import {Brand} from './brand';
-import {useAuth} from './auth-provider';
-
+import{useEffect}from'react';import{usePathname,useRouter}from'next/navigation';import Link from'next/link';import{motion}from'framer-motion';import{ShieldAlert}from'lucide-react';import{signOut}from'firebase/auth';import{Brand}from'./brand';import{useAuth}from'./auth-provider';import{auth}from'@/lib/firebase/client';
 const publicPaths=['/login','/signup','/legal','/help'];
-export function AuthGate({children}:{children:React.ReactNode}){
-  const {user,loading}=useAuth(),path=usePathname(),router=useRouter();
-  const isPublic=publicPaths.some(x=>path===x||path.startsWith(`${x}/`));
-  useEffect(()=>{if(!loading&&!user&&!isPublic)router.replace(`/login?next=${encodeURIComponent(path)}`);if(!loading&&user&&!user.emailVerified&&path!=='/verify-email')router.replace('/verify-email');if(!loading&&user&&user.emailVerified&&(path==='/login'||path==='/signup'||path==='/verify-email'))router.replace('/home')},[loading,user,isPublic,path,router]);
-  if(loading||(!user&&!isPublic)||(user&&!user.emailVerified&&path!=='/verify-email')||(user&&user.emailVerified&&(path==='/login'||path==='/signup'||path==='/verify-email')))return <div className="grid min-h-screen place-items-center"><motion.div initial={{opacity:0,scale:.92}} animate={{opacity:1,scale:1}} className="flex flex-col items-center gap-5"><Brand/><span className="vayxo-loader" aria-label="Loading"><i/><i/><i/></span></motion.div></div>;
-  return children;
-}
+export function AuthGate({children}:{children:React.ReactNode}){const{user,profile,loading}=useAuth(),path=usePathname(),router=useRouter();const isPublic=publicPaths.some(x=>path===x||path.startsWith(`${x}/`));useEffect(()=>{if(loading)return;if(!user&&!isPublic)router.replace(`/login?next=${encodeURIComponent(path)}`);else if(user&&!user.emailVerified&&path!=='/verify-email'&&!isPublic)router.replace('/verify-email');else if(user&&user.emailVerified&&!profile?.suspended&&(path==='/login'||path==='/signup'||path==='/verify-email'))router.replace('/home')},[loading,user,profile?.suspended,isPublic,path,router]);if(profile?.suspended&&!isPublic)return <main className="grid min-h-screen place-items-center p-5"><section className="w-full max-w-lg rounded-[34px] border bg-background/80 p-8 text-center shadow-2xl backdrop-blur-3xl"><ShieldAlert className="mx-auto size-12"/><h1 className="mt-5 text-3xl font-black">Account suspended</h1><p className="mt-3 text-muted-foreground">This VAYROX account is temporarily restricted. You can still open Help & Support to contact the team.</p><div className="mt-7 flex justify-center gap-3"><Link href="/help" className="rounded-full bg-foreground px-5 py-3 font-bold text-background">Get help</Link><button onClick={()=>auth&&signOut(auth)} className="rounded-full border px-5 py-3">Sign out</button></div></section></main>;if(loading||(!user&&!isPublic)||(user&&!user.emailVerified&&path!=='/verify-email'&&!isPublic)||(user&&user.emailVerified&&!profile?.suspended&&(path==='/login'||path==='/signup'||path==='/verify-email')))return <div className="grid min-h-screen place-items-center"><motion.div initial={{opacity:0,scale:.92}} animate={{opacity:1,scale:1}} className="flex flex-col items-center gap-5"><Brand/><span className="vayxo-loader" aria-label="Loading"><i/><i/><i/></span></motion.div></div>;return children}
