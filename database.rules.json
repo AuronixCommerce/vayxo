@@ -12,7 +12,7 @@
     "usernames": {
       ".read": true,
       "$username": {
-        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || data.val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && (!newData.exists() || newData.val() === auth.uid)))"
       }
     },
     "posts": {
@@ -25,34 +25,40 @@
     },
     "likes": {
       ".read": true,
-      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true" } }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "reposts": {
       ".read": true,
-      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true" } }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "bookmarks": {
-      "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
+      "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "likesByUser": {
-      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid" } }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "repostsByUser": {
-      "$uid": { ".read": true, "$postId": { ".write": "auth != null && auth.uid === $uid" } }
+      "$uid": { ".read": true, "$postId": { ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "bookmarksByUser": {
-      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid" } }
+      "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "following": {
       "$uid": {
         ".read": true,
-        "$target": { ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || root.child('users').child($target).child('accountVisibility').val() !== 'private')) || (auth.uid === $target && root.child('followRequests').child($target).child($uid).exists()))" }
+        "$target": {
+          ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || root.child('users').child($target).child('accountVisibility').val() !== 'private')) || (auth.uid === $target && root.child('followRequests').child($target).child($uid).exists()))",
+          ".validate": "!newData.exists() || newData.val() === true"
+        }
       }
     },
     "followers": {
       "$uid": {
         ".read": true,
-        "$follower": { ".write": "auth != null && ((auth.uid === $follower && (!newData.exists() || root.child('users').child($uid).child('accountVisibility').val() !== 'private')) || (auth.uid === $uid && root.child('followRequests').child($uid).child($follower).exists()))" }
+        "$follower": {
+          ".write": "auth != null && ((auth.uid === $follower && (!newData.exists() || root.child('users').child($uid).child('accountVisibility').val() !== 'private')) || (auth.uid === $uid && root.child('followRequests').child($uid).child($follower).exists()))",
+          ".validate": "!newData.exists() || newData.val() === true"
+        }
       }
     },
     "followRequests": {
@@ -60,7 +66,8 @@
         ".read": "auth != null && auth.uid === $target",
         "$requester": {
           ".read": "auth != null && (auth.uid === $target || auth.uid === $requester)",
-          ".write": "auth != null && ((auth.uid === $requester && root.child('users').child($target).child('accountVisibility').val() === 'private') || (auth.uid === $target && !newData.exists()))"
+          ".write": "auth != null && ((auth.uid === $requester && (!newData.exists() || root.child('users').child($target).child('accountVisibility').val() === 'private')) || (auth.uid === $target && !newData.exists()))",
+          ".validate": "!newData.exists() || newData.hasChild('createdAt')"
         }
       }
     },
