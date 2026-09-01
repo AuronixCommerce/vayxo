@@ -98,7 +98,8 @@
       "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", "$threadId": { ".indexOn": ["createdAt"] } }
     },
     "supportTickets": {
-      "$uid": { ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".indexOn": ["updatedAt"] }
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')", ".indexOn": ["updatedAt"] }
     },
     "reports": {
       "$id": { ".write": "auth != null && newData.child('reporterId').val() === auth.uid", ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'" }
