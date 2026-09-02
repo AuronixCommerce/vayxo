@@ -1,0 +1,57 @@
+import{get,onValue,push,query,ref,serverTimestamp,set,update,orderByChild,limitToLast}from'firebase/database';
+import{realtimeDb}from'./client';
+import{createNotification,getProfileByUsername,publishPost,subscribeTimeline,type RealtimePost,type UserProfile}from'./realtime';
+export type ProfilePrefs={showLikes:boolean;showReposts:boolean;showReplies:boolean;showProfileViews:boolean};
+export type NotificationPrefs={likes:boolean;replies:boolean;mentions:boolean;follows:boolean;requests:boolean;reposts:boolean;messages:boolean;security:boolean};
+export type AccessibilityPrefs={reduceMotion:boolean;largeText:boolean;highContrast:boolean;autoplayGifs:boolean};
+export type PostAudience='everyone'|'followers'|'close_friends'|'only_me';
+export type ReplyPermission='everyone'|'following'|'mentioned'|'nobody';
+export type PostMeta={audience:PostAudience;replyPermission:ReplyPermission;editedAt?:number;quotePostId?:string|null};
+export type SocialList={id:string;name:string;description?:string;isPrivate:boolean;createdAt:number};
+export type BookmarkCollection={id:string;name:string;createdAt:number};
+export type GroupConversation={id:string;name:string;ownerId:string;members:Record<string,boolean>;lastMessage?:string;lastMessageAt?:number;createdAt:number};
+export type GroupMessage={id:string;senderId:string;text:string;createdAt:number};
+export type CommunityNote={id:string;postId:string;authorId:string;text:string;createdAt:number;helpful?:number};
+export type ProductProfile=UserProfile&{bannerUrl?:string;website?:string;location?:string;birthday?:string;verified?:boolean;verificationType?:'person'|'business'|'organization'};
+const db=()=>{if(!realtimeDb)throw new Error('VAYROX live data is not configured');return realtimeDb};
+const defaults:ProfilePrefs={showLikes:true,showReposts:true,showReplies:true,showProfileViews:false};
+export function subscribeProfilePrefs(uid:string,cb:(v:ProfilePrefs)=>void){return onValue(ref(db(),`profilePrefs/${uid}`),s=>cb({...defaults,...(s.val()||{})}))}
+export async function updateProfilePrefs(uid:string,v:ProfilePrefs){await set(ref(db(),`profilePrefs/${uid}`),v)}
+export function subscribeNotificationPrefs(uid:string,cb:(v:NotificationPrefs)=>void){const d:NotificationPrefs={likes:true,replies:true,mentions:true,follows:true,requests:true,reposts:true,messages:true,security:true};return onValue(ref(db(),`notificationPrefs/${uid}`),s=>cb({...d,...(s.val()||{})}))}
+export async function updateNotificationPrefs(uid:string,v:NotificationPrefs){await set(ref(db(),`notificationPrefs/${uid}`),v)}
+export function subscribeAccessibilityPrefs(uid:string,cb:(v:AccessibilityPrefs)=>void){const d:AccessibilityPrefs={reduceMotion:false,largeText:false,highContrast:false,autoplayGifs:true};return onValue(ref(db(),`accessibilityPrefs/${uid}`),s=>cb({...d,...(s.val()||{})}))}
+export async function updateAccessibilityPrefs(uid:string,v:AccessibilityPrefs){await set(ref(db(),`accessibilityPrefs/${uid}`),v)}
+export async function setPostMeta(postId:string,meta:PostMeta){await set(ref(db(),`postMeta/${postId}`),meta)}
+export function subscribePostMeta(postId:string,cb:(v:PostMeta)=>void){return onValue(ref(db(),`postMeta/${postId}`),s=>cb({audience:'everyone',replyPermission:'everyone',...(s.val()||{})}))}
+export function subscribeAllPostMeta(cb:(v:Record<string,PostMeta>)=>void){return onValue(ref(db(),'postMeta'),s=>cb((s.val()||{}) as Record<string,PostMeta>))}
+export async function publishProductPost(input:{authorId:string;authorName:string;username:string;text:string;media:string[];replyTo:string|null;quotePostId:string|null},meta:PostMeta){const id=await publishPost(input);await setPostMeta(id,{...meta,quotePostId:input.quotePostId||null});await notifyMentions(input.authorId,input.authorName,input.text,id);return id}
+export async function editProductPost(post:RealtimePost,text:string){const index=await get(ref(db(),`postIndex/${post.id}`));const i=index.val() as{private?:boolean;storageOwnerId?:string}|null;const path=i?.private?`privatePosts/${i.storageOwnerId}/${post.id}`:`posts/${post.id}`;await update(ref(db(),path),{text:text.slice(0,280)});await update(ref(db(),`postMeta/${post.id}`),{editedAt:Date.now()});await notifyMentions(post.authorId,post.authorName,text,post.id)}
+async function notifyMentions(authorId:string,authorName:string,text:string,postId:string){const handles=[...new Set(Array.from(text.matchAll(/@([a-z0-9_]{3,20})/gi)).map(x=>x[1].toLowerCase()))];for(const handle of handles){const p=await getProfileByUsername(handle);if(p&&p.uid!==authorId)await createNotification(p.uid,{actorId:authorId,actorName:authorName,type:'mention',postId})}}
+export function subscribePinnedPost(uid:string,cb:(id:string)=>void){return onValue(ref(db(),`pinnedPost/${uid}`),s=>cb(String(s.val()||'')))}
+export async function setPinnedPost(uid:string,id:string|null){await set(ref(db(),`pinnedPost/${uid}`),id)}
+export async function trackProfileView(uid:string,viewerUid?:string){if(!viewerUid||viewerUid===uid)return;await set(ref(db(),`profileViews/${uid}/${viewerUid}`),{lastViewedAt:serverTimestamp()})}
+export function subscribeProfileViewCount(uid:string,cb:(n:number)=>void){return onValue(ref(db(),`profileViews/${uid}`),s=>cb(Object.keys(s.val()||{}).length))}
+export function subscribeCloseFriends(uid:string,cb:(ids:Set<string>)=>void){return onValue(ref(db(),`closeFriends/${uid}`),s=>cb(new Set(Object.keys(s.val()||{}))))}
+export async function toggleCloseFriend(uid:string,target:string){const n=ref(db(),`closeFriends/${uid}/${target}`),s=await get(n);await set(n,s.exists()?null:true);return!s.exists()}
+export function canSeeAudience(meta:PostMeta|undefined,post:RealtimePost,viewer:string|undefined,following:Set<string>,closeFriends:Set<string>){const a=meta?.audience||'everyone';if(post.authorId===viewer)return true;if(a==='everyone')return true;if(!viewer)return false;if(a==='followers')return following.has(post.authorId);if(a==='close_friends')return closeFriends.has(post.authorId);return false}
+export function subscribeProductTimeline(viewer:string|undefined,cb:(posts:RealtimePost[])=>void,max=120){let posts:RealtimePost[]=[],meta:Record<string,PostMeta>={},following=new Set<string>(),closeByOwners=new Set<string>();const emit=()=>cb(posts.filter(p=>canSeeAudience(meta[p.id],p,viewer,following,closeByOwners)));const a=subscribeTimeline(x=>{posts=x;emit()},max),b=subscribeAllPostMeta(x=>{meta=x;emit()});let c=()=>{},d=()=>{};if(viewer){c=onValue(ref(db(),`following/${viewer}`),s=>{following=new Set(Object.keys(s.val()||{}));emit()});d=onValue(ref(db(),'closeFriends'),s=>{const root=s.val()||{};closeByOwners=new Set(Object.keys(root).filter(owner=>root[owner]?.[viewer]===true));emit()})}return()=>{a();b();c();d()}}
+export function subscribeLists(uid:string,cb:(items:SocialList[])=>void){return onValue(ref(db(),`lists/${uid}`),s=>{const items=Object.entries(s.val()||{}).map(([id,v])=>({id,...(v as Omit<SocialList,'id'>)}));cb(items.sort((a,b)=>b.createdAt-a.createdAt))})}
+export async function createList(uid:string,name:string,description:string,isPrivate:boolean){const n=push(ref(db(),`lists/${uid}`));await set(n,{name:name.slice(0,50),description:description.slice(0,120),isPrivate,createdAt:Date.now()});return n.key||''}
+export function subscribeListMembers(uid:string,listId:string,cb:(ids:Set<string>)=>void){return onValue(ref(db(),`listMembers/${uid}/${listId}`),s=>cb(new Set(Object.keys(s.val()||{}))))}
+export async function toggleListMember(uid:string,listId:string,target:string){const n=ref(db(),`listMembers/${uid}/${listId}/${target}`),s=await get(n);await set(n,s.exists()?null:true)}
+export function subscribeBookmarkCollections(uid:string,cb:(items:BookmarkCollection[])=>void){return onValue(ref(db(),`bookmarkCollections/${uid}`),s=>cb(Object.entries(s.val()||{}).map(([id,v])=>({id,...(v as Omit<BookmarkCollection,'id'>)}))))}
+export async function createBookmarkCollection(uid:string,name:string){const n=push(ref(db(),`bookmarkCollections/${uid}`));await set(n,{name:name.slice(0,40),createdAt:Date.now()});return n.key||''}
+export async function addBookmarkToCollection(uid:string,collectionId:string,postId:string){await set(ref(db(),`bookmarkCollectionItems/${uid}/${collectionId}/${postId}`),true)}
+export function subscribeMutedWords(uid:string,cb:(words:string[])=>void){return onValue(ref(db(),`mutedWords/${uid}`),s=>cb(Object.keys(s.val()||{})))}
+export async function addMutedWord(uid:string,word:string){const clean=word.trim().toLowerCase();if(clean)await set(ref(db(),`mutedWords/${uid}/${encodeURIComponent(clean)}`),true)}
+export async function removeMutedWord(uid:string,word:string){await set(ref(db(),`mutedWords/${uid}/${encodeURIComponent(word.toLowerCase())}`),null)}
+export async function saveOnboarding(uid:string,interests:string[]){await set(ref(db(),`onboarding/${uid}`),{completed:true,interests,completedAt:serverTimestamp()})}
+export async function requestVerification(uid:string,type:'person'|'business'|'organization',note:string){await set(ref(db(),`verificationRequests/${uid}`),{type,note:note.slice(0,500),status:'pending',createdAt:serverTimestamp()})}
+export function subscribeVerificationRequest(uid:string,cb:(v:{type:string;note?:string;status:string}|null)=>void){return onValue(ref(db(),`verificationRequests/${uid}`),s=>cb(s.exists()?s.val():null))}
+export function subscribeMyReports(uid:string,cb:(items<Array<Record<string,unknown>&{id:string}>)=>void){return onValue(ref(db(),'reports'),s=>{const rows=Object.entries(s.val()||{}).map(([id,v])=>({id,...(v as Record<string,unknown>)})).filter(x=>x.reporterId===uid);cb(rows)})}
+export function subscribeGroups(uid:string,cb:(items:GroupConversation[])=>void){return onValue(ref(db(),'groupConversations'),s=>{const rows=Object.entries(s.val()||{}).map(([id,v])=>({id,...(v as Omit<GroupConversation,'id'>)})).filter(x=>x.members?.[uid]);cb(rows.sort((a,b)=>(b.lastMessageAt||0)-(a.lastMessageAt||0)))})}
+export async function createGroup(uid:string,name:string,members:string[]){const n=push(ref(db(),'groupConversations')),id=n.key||'';await set(n,{name:name.slice(0,60),ownerId:uid,members:Object.fromEntries([...new Set([uid,...members])].map(x=>[x,true])),createdAt:Date.now(),lastMessageAt:Date.now()});return id}
+export function subscribeGroupMessages(id:string,cb:(items:GroupMessage[])=>void){const q=query(ref(db(),`groupMessages/${id}`),orderByChild('createdAt'),limitToLast(150));return onValue(q,s=>cb(Object.entries(s.val()||{}).map(([mid,v])=>({id:mid,...(v as Omit<GroupMessage,'id'>)}))))}
+export async function sendGroupMessage(id:string,uid:string,text:string){const n=push(ref(db(),`groupMessages/${id}`));await set(n,{senderId:uid,text:text.slice(0,2000),createdAt:Date.now()});await update(ref(db(),`groupConversations/${id}`),{lastMessage:text.slice(0,120),lastMessageAt:Date.now()})}
+export async function addCommunityNote(postId:string,uid:string,text:string){const n=push(ref(db(),'communityNotes'));await set(n,{postId,authorId:uid,text:text.slice(0,500),createdAt:Date.now(),helpful:0})}
+export function subscribeCommunityNotes(postId:string,cb:(items:CommunityNote[])=>void){return onValue(ref(db(),'communityNotes'),s=>cb(Object.entries(s.val()||{}).map(([id,v])=>({id,...(v as Omit<CommunityNote,'id'>)})).filter(x=>x.postId===postId)))}
