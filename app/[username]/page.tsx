@@ -1,1 +1,1 @@
-import {FeaturePage} from '@/components/ex/feature-page';export default async function Page({params}:{params:Promise<{username:string}>}){return <FeaturePage kind="profile" username={(await params).username}/>}
+import {EnhancedProfile} from '@/components/ex/enhanced-profile';export default async function Page({params}:{params:Promise<{username:string}>}){return <EnhancedProfile username={(await params).username}/>}
