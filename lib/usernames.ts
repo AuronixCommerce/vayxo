@@ -1,0 +1,3 @@
+export const RESERVED_USERNAMES=new Set(['ai','admin','api','auth','bookmarks','close-friends','compose','drafts','explore','groups','hashtag','help','home','legal','login','messages','notifications','onboarding','post','privacy','settings','signup','start','support','terms','verify','verification','vx','vayrox','vayroxonline','root','system','security','moderator','mod','official']);
+export function normalizeUsername(value:string){return value.trim().toLowerCase()}
+export function validateUsername(value:string){const handle=normalizeUsername(value);if(!/^[a-z0-9_]{3,20}$/.test(handle))return'Username must be 3–20 letters, numbers, or underscores.';if(RESERVED_USERNAMES.has(handle))return'That username is reserved by VAYROX.';return''}
