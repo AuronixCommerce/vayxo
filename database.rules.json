@@ -54,7 +54,7 @@
       ".indexOn": ["createdAt", "authorId", "replyTo"],
       "$postId": {
         ".write": "auth != null && (((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid) && root.child('users').child(auth.uid).child('suspended').val() !== true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() !== true)"
+        ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() !== true && (!newData.child('replyTo').exists() || root.child('postIndex').child(newData.child('replyTo').val()).child('private').val() !== true))"
       }
     },
     "privatePosts": {
@@ -62,23 +62,24 @@
         ".read": "auth != null && (auth.uid === $owner || root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('followers').child($owner).child(auth.uid).val() === true && !root.child('blocks').child($owner).child(auth.uid).exists() && !root.child('blocks').child(auth.uid).child($owner).exists()))",
         ".indexOn": ["createdAt", "authorId", "replyTo"],
         "$postId": {
-          ".write": "auth != null && ((newData.exists() && newData.child('authorId').val() === auth.uid && (auth.uid === $owner || root.child('followers').child($owner).child(auth.uid).val() === true) && root.child('users').child(auth.uid).child('suspended').val() !== true) || (!newData.exists() && data.child('authorId').val() === auth.uid) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-          ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() === true && newData.child('privacyOwnerId').val() === $owner)"
+          ".write": "auth != null && ((newData.exists() && newData.child('authorId').val() === auth.uid && root.child('users').child(auth.uid).child('suspended').val() !== true && (auth.uid === $owner || (root.child('followers').child($owner).child(auth.uid).val() === true && !root.child('blocks').child($owner).child(auth.uid).exists() && !root.child('blocks').child(auth.uid).child($owner).exists() && newData.child('replyTo').isString() && root.child('postIndex').child(newData.child('replyTo').val()).child('private').val() === true && root.child('postIndex').child(newData.child('replyTo').val()).child('storageOwnerId').val() === $owner))) || (!newData.exists() && data.child('authorId').val() === auth.uid) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() === true && newData.child('privacyOwnerId').val() === $owner && (!newData.child('replyTo').exists() || (root.child('postIndex').child(newData.child('replyTo').val()).child('private').val() === true && root.child('postIndex').child(newData.child('replyTo').val()).child('storageOwnerId').val() === $owner)))"
         }
       }
     },
     "postIndex": {
       "$postId": {
-        ".read": "auth != null",
+        ".read": "auth != null && (data.child('private').val() !== true || auth.uid === data.child('storageOwnerId').val() || root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('followers').child(data.child('storageOwnerId').val()).child(auth.uid).val() === true && !root.child('blocks').child(data.child('storageOwnerId').val()).child(auth.uid).exists() && !root.child('blocks').child(auth.uid).child(data.child('storageOwnerId').val()).exists()))",
         ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".validate": "!newData.exists() || (newData.hasChildren(['authorId','private','storageOwnerId']) && newData.child('private').isBoolean() && newData.child('storageOwnerId').isString())"
       }
     },
     "replyIndex": {
       "$parentId": {
-        ".read": "auth != null && (root.child('postIndex').child($parentId).child('private').val() !== true || auth.uid === root.child('postIndex').child($parentId).child('storageOwnerId').val() || root.child('followers').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).val() === true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".read": "auth != null && (root.child('postIndex').child($parentId).child('private').val() !== true || auth.uid === root.child('postIndex').child($parentId).child('storageOwnerId').val() || root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('followers').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).val() === true && !root.child('blocks').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).exists() && !root.child('blocks').child(auth.uid).child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).exists()))",
         "$replyId": {
-          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid && root.child('postIndex').child($replyId).child('authorId').val() === auth.uid && root.child('postIndex').child($replyId).child('replyTo').val() === $parentId && (root.child('postIndex').child($parentId).child('private').val() !== true || auth.uid === root.child('postIndex').child($parentId).child('storageOwnerId').val() || (root.child('followers').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).val() === true && !root.child('blocks').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).exists() && !root.child('blocks').child(auth.uid).child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).exists()))) || (data.exists() && (!newData.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'))))",
+          ".validate": "!newData.exists() || (newData.child('authorId').val() === auth.uid && newData.child('private').isBoolean() && newData.child('storageOwnerId').isString())"
         }
       }
     },
@@ -110,7 +111,7 @@
       "$uid": {
         ".read": true,
         "$target": {
-          ".write": "auth != null && (!newData.exists() || (!root.child('blocks').child($uid).child($target).exists() && !root.child('blocks').child($target).child($uid).exists())) && ((auth.uid === $uid) || (auth.uid === $target && (root.child('followRequests').child($target).child($uid).exists() || (!newData.exists() && root.child('blocks').child($target).child($uid).exists()))))",
+          ".write": "auth != null && ((!newData.exists() && (auth.uid === $uid || auth.uid === $target)) || (newData.exists() && !root.child('blocks').child($uid).child($target).exists() && !root.child('blocks').child($target).child($uid).exists() && ((auth.uid === $uid && root.child('users').child($target).child('accountVisibility').val() !== 'private') || (auth.uid === $target && root.child('followRequests').child($target).child($uid).exists()))))",
           ".validate": "!newData.exists() || newData.val() === true"
         }
       }
@@ -119,7 +120,7 @@
       "$uid": {
         ".read": true,
         "$follower": {
-          ".write": "auth != null && (!newData.exists() || (!root.child('blocks').child($uid).child($follower).exists() && !root.child('blocks').child($follower).child($uid).exists())) && ((auth.uid === $follower) || (auth.uid === $uid && (root.child('followRequests').child($uid).child($follower).exists() || (!newData.exists() && root.child('blocks').child($uid).child($follower).exists()))))",
+          ".write": "auth != null && ((!newData.exists() && (auth.uid === $follower || auth.uid === $uid)) || (newData.exists() && !root.child('blocks').child($uid).child($follower).exists() && !root.child('blocks').child($follower).child($uid).exists() && ((auth.uid === $follower && root.child('users').child($uid).child('accountVisibility').val() !== 'private') || (auth.uid === $uid && root.child('followRequests').child($uid).child($follower).exists()))))",
           ".validate": "!newData.exists() || newData.val() === true"
         }
       }
@@ -135,12 +136,32 @@
       }
     },
     "conversationsByUser": {
-      "$uid": { ".read": "auth != null && auth.uid === $uid", "$id": { ".write": "auth != null && (auth.uid === $uid || root.child('conversations').child($id).child('members').child(auth.uid).val() === true)" } }
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$id": { ".write": "auth != null && root.child('conversations').child($id).child('members').child(auth.uid).val() === true && root.child('conversations').child($id).child('members').child($uid).val() === true" }
+      }
     },
     "conversations": {
       "$id": {
         ".read": "auth != null && data.child('members').child(auth.uid).val() === true",
-        ".write": "auth != null && !root.child('conversationBlocks').child($id).exists() && ((data.exists() && data.child('members').child(auth.uid).val() === true) || (!data.exists() && newData.child('initiatorId').val() === auth.uid && newData.child('recipientId').isString() && newData.child('recipientId').val() !== auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('members').child(newData.child('recipientId').val()).val() === true && !root.child('blocks').child(auth.uid).child(newData.child('recipientId').val()).exists() && !root.child('blocks').child(newData.child('recipientId').val()).child(auth.uid).exists() && (!root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').exists() || root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').val() === 'everyone' || (root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').val() === 'following' && root.child('followers').child(newData.child('recipientId').val()).child(auth.uid).val() === true))))"
+        ".write": "auth != null && !data.exists() && !root.child('conversationBlocks').child($id).exists() && newData.child('initiatorId').val() === auth.uid && newData.child('recipientId').isString() && newData.child('recipientId').val() !== auth.uid && newData.child('members').child(auth.uid).val() === true && newData.child('members').child(newData.child('recipientId').val()).val() === true && !root.child('blocks').child(auth.uid).child(newData.child('recipientId').val()).exists() && !root.child('blocks').child(newData.child('recipientId').val()).child(auth.uid).exists() && (!root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').exists() || root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').val() === 'everyone' || (root.child('safetySettings').child(newData.child('recipientId').val()).child('dmPermission').val() === 'following' && root.child('followers').child(newData.child('recipientId').val()).child(auth.uid).val() === true))",
+        "members": {
+          "$member": { ".validate": "newData.val() === true && ($member === newData.parent().parent().child('initiatorId').val() || $member === newData.parent().parent().child('recipientId').val())" }
+        },
+        "memberProfiles": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('members').child(auth.uid).val() === true && !root.child('conversationBlocks').child($id).exists()",
+            ".validate": "$uid === newData.parent().parent().child('initiatorId').val() || $uid === newData.parent().parent().child('recipientId').val()"
+          }
+        },
+        "lastMessage": {
+          ".write": "auth != null && data.parent().child('members').child(auth.uid).val() === true && !root.child('conversationBlocks').child($id).exists()",
+          ".validate": "newData.isString() && newData.val().length <= 2000"
+        },
+        "lastMessageAt": {
+          ".write": "auth != null && data.parent().child('members').child(auth.uid).val() === true && !root.child('conversationBlocks').child($id).exists()",
+          ".validate": "newData.isNumber()"
+        }
       }
     },
     "messages": {
