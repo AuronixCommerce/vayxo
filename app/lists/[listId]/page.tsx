@@ -1,0 +1,1 @@
+import{ListTimelinePage}from'@/components/ex/list-timeline-page';export default async function Page({params}:{params:Promise<{listId:string}>}){return <ListTimelinePage listId={(await params).listId}/>}
