@@ -1,0 +1,3 @@
+'use client';
+import{AnimatePresence,motion}from'framer-motion';import{usePathname}from'next/navigation';
+export function RouteShell({children}:{children:React.ReactNode}){const path=usePathname();return <><AnimatePresence mode="wait" initial={false}><motion.div key={path} initial={{opacity:0,y:7,filter:'blur(3px)'}} animate={{opacity:1,y:0,filter:'blur(0px)'}} exit={{opacity:0,y:-5,filter:'blur(2px)'}} transition={{duration:.2,ease:[.22,1,.36,1]}}>{children}</motion.div></AnimatePresence><motion.div key={`${path}-progress`} className="pointer-events-none fixed left-0 top-0 z-[100] h-[2px] bg-foreground" initial={{width:'0%',opacity:1}} animate={{width:['0%','42%','78%','100%'],opacity:[1,1,1,0]}} transition={{duration:.7,times:[0,.25,.7,1]}}/></>}
