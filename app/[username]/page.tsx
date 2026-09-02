@@ -1,1 +1,1 @@
-import {EnhancedProfile} from '@/components/ex/enhanced-profile';export default async function Page({params}:{params:Promise<{username:string}>}){return <EnhancedProfile username={(await params).username}/>}
+import{redirect}from'next/navigation';export default async function Page({params}:{params:Promise<{username:string}>}){redirect(`/vx/${encodeURIComponent((await params).username)}`)}
