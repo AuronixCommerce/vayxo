@@ -1,1 +1,1 @@
-import{PostDetailPage}from'@/components/ex/post-detail-page';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){return <PostDetailPage postId={(await params).postId}/>}
+import{EnhancedPostDetail}from'@/components/ex/enhanced-post-detail';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){return <EnhancedPostDetail postId={(await params).postId}/>}
