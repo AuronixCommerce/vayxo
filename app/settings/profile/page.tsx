@@ -1,1 +1,1 @@
-import {FeaturePage} from '@/components/ex/feature-page';export default function Page(){return <FeaturePage kind="settings"/>}
+import{ProfileEditor}from'@/components/ex/profile-editor';export default function Page(){return <ProfileEditor/>}
