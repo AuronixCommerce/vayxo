@@ -1,5 +1,8 @@
 import{onValue,ref,serverTimestamp,update}from'firebase/database';import{realtimeDb}from'./client';import type{SupportTicket}from'./realtime';
 export type AdminSupportTicket=SupportTicket&{uid:string};
+export type AdminReport={id:string;reporterId:string;targetUid:string;postId?:string;type:'post'|'account';reason:string;status:'open'|'reviewed'|'resolved';createdAt:number;updatedAt?:number};
 const needDb=()=>{if(!realtimeDb)throw new Error('VAYROX live data is not configured');return realtimeDb};
 export function subscribeAllSupportTickets(cb:(items:AdminSupportTicket[])=>void){return onValue(ref(needDb(),'supportTickets'),snap=>{const rows:AdminSupportTicket[]=[];Object.entries(snap.val()||{}).forEach(([uid,tickets])=>Object.entries((tickets as Record<string,unknown>)||{}).forEach(([id,value])=>rows.push({uid,id,...value as Omit<SupportTicket,'id'>} as AdminSupportTicket)));rows.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));cb(rows)})}
 export async function adminUpdateSupportTicket(uid:string,ticketId:string,status:SupportTicket['status']){await update(ref(needDb(),`supportTickets/${uid}/${ticketId}`),{status,updatedAt:serverTimestamp()})}
+export function subscribeReports(cb:(items:AdminReport[])=>void){return onValue(ref(needDb(),'reports'),snap=>{const rows=Object.entries(snap.val()||{}).map(([id,value])=>({id,...value as Omit<AdminReport,'id'>} as AdminReport)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));cb(rows)})}
+export async function adminUpdateReport(id:string,status:'reviewed'|'resolved'){await update(ref(needDb(),`reports/${id}`),{status,updatedAt:serverTimestamp()})}
