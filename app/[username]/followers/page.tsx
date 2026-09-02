@@ -1,1 +1,1 @@
-import{redirect}from'next/navigation';export default async function Page({params}:{params:Promise<{username:string}>}){redirect(`/vx/${encodeURIComponent((await params).username)}/followers`)}
+import{ConnectionsPage}from'@/components/ex/connections-page';export default async function Page({params}:{params:Promise<{username:string}>}){return <ConnectionsPage username={(await params).username} mode="followers"/>}

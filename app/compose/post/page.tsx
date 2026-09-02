@@ -1,1 +1,1 @@
-import{ComposePage}from'@/components/ex/compose-page';export default function Page(){return <ComposePage/>}
+import{ComposeV2}from'@/components/ex/compose-v2';export default function Page(){return <ComposeV2/>}

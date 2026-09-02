@@ -1,1 +1,1 @@
-import{EnhancedProfile}from'@/components/ex/enhanced-profile';export default async function Page({params}:{params:Promise<{username:string}>}){return <EnhancedProfile username={(await params).username}/>}
+import{ProfileV2}from'@/components/ex/profile-v2';export default async function Page({params}:{params:Promise<{username:string}>}){return <ProfileV2 username={(await params).username}/>}

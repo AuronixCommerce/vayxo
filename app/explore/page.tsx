@@ -1,1 +1,1 @@
-import {EnhancedExplore} from '@/components/ex/enhanced-explore';export default function Page(){return <EnhancedExplore/>}
+import{ExploreV2}from'@/components/ex/explore-v2';export default function Page(){return <ExploreV2/>}

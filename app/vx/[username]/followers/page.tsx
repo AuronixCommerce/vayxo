@@ -1,1 +1,1 @@
-import{FeaturePage}from'@/components/ex/feature-page';export default async function Page({params}:{params:Promise<{username:string}>}){return <FeaturePage kind="followers" username={(await params).username}/>}
+import{ConnectionsPage}from'@/components/ex/connections-page';export default async function Page({params}:{params:Promise<{username:string}>}){return <ConnectionsPage username={(await params).username} mode="followers"/>}

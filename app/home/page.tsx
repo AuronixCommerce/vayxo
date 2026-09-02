@@ -1,1 +1,1 @@
-import {EnhancedHome} from '@/components/ex/enhanced-home';export default function HomePage(){return <EnhancedHome/>}
+import{HomeV2}from'@/components/ex/home-v2';export default function Page(){return <HomeV2/>}
