@@ -19,20 +19,49 @@
       ".read": true,
       ".indexOn": ["createdAt", "authorId", "replyTo"],
       "$postId": {
-        ".write": "auth != null && ((((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid) && root.child('users').child(auth.uid).child('suspended').val() !== true) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280)"
+        ".write": "auth != null && (((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid) && root.child('users').child(auth.uid).child('suspended').val() !== true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() !== true)"
       }
+    },
+    "privatePosts": {
+      "$owner": {
+        ".read": "auth != null && (auth.uid === $owner || root.child('followers').child($owner).child(auth.uid).val() === true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".indexOn": ["createdAt", "authorId", "replyTo"],
+        "$postId": {
+          ".write": "auth != null && ((newData.exists() && newData.child('authorId').val() === auth.uid && (auth.uid === $owner || root.child('followers').child($owner).child(auth.uid).val() === true) && root.child('users').child(auth.uid).child('suspended').val() !== true) || (!newData.exists() && data.child('authorId').val() === auth.uid) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".validate": "!newData.exists() || (newData.hasChildren(['authorId','text','createdAt','counts']) && newData.child('text').isString() && newData.child('text').val().length >= 1 && newData.child('text').val().length <= 280 && newData.child('isPrivate').val() === true && newData.child('privacyOwnerId').val() === $owner)"
+        }
+      }
+    },
+    "postIndex": {
+      "$postId": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "!newData.exists() || (newData.hasChildren(['authorId','private','storageOwnerId']) && newData.child('private').isBoolean() && newData.child('storageOwnerId').isString())"
+      }
+    },
+    "replyIndex": {
+      "$parentId": {
+        ".read": "auth != null && (root.child('postIndex').child($parentId).child('private').val() !== true || auth.uid === root.child('postIndex').child($parentId).child('storageOwnerId').val() || root.child('followers').child(root.child('postIndex').child($parentId).child('storageOwnerId').val()).child(auth.uid).val() === true || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        "$replyId": {
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+        }
+      }
+    },
+    "replyCounts": {
+      ".read": true,
+      "$postId": { ".write": "auth != null && root.child('users').child(auth.uid).child('suspended').val() !== true" }
     },
     "likes": {
       ".read": true,
-      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true", ".validate": "!newData.exists() || newData.val() === true" } }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true && (root.child('postIndex').child($postId).child('private').val() !== true || auth.uid === root.child('postIndex').child($postId).child('storageOwnerId').val() || root.child('followers').child(root.child('postIndex').child($postId).child('storageOwnerId').val()).child(auth.uid).val() === true)", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "reposts": {
       ".read": true,
-      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true", ".validate": "!newData.exists() || newData.val() === true" } }
+      "$postId": { "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('users').child(auth.uid).child('suspended').val() !== true && (root.child('postIndex').child($postId).child('private').val() !== true || auth.uid === root.child('postIndex').child($postId).child('storageOwnerId').val() || root.child('followers').child(root.child('postIndex').child($postId).child('storageOwnerId').val()).child(auth.uid).val() === true)", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "bookmarks": {
-      "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
+      "$postId": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid && (root.child('postIndex').child($postId).child('private').val() !== true || auth.uid === root.child('postIndex').child($postId).child('storageOwnerId').val() || root.child('followers').child(root.child('postIndex').child($postId).child('storageOwnerId').val()).child(auth.uid).val() === true)", ".validate": "!newData.exists() || newData.val() === true" } }
     },
     "likesByUser": {
       "$uid": { ".read": "auth != null && auth.uid === $uid", "$postId": { ".write": "auth != null && auth.uid === $uid", ".validate": "!newData.exists() || newData.val() === true" } }
