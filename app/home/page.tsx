@@ -1,2 +1,1 @@
-import { SocialApp } from '@/components/ex/social-app';
-export default function HomePage(){return <SocialApp/>}
+import {EnhancedHome} from '@/components/ex/enhanced-home';export default function HomePage(){return <EnhancedHome/>}
