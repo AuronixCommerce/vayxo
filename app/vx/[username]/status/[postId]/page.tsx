@@ -1,0 +1,1 @@
+import{EnhancedPostDetail}from'@/components/ex/enhanced-post-detail';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){return <EnhancedPostDetail postId={(await params).postId}/>}
