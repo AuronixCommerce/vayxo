@@ -1,1 +1,1 @@
-import {FeaturePage} from '@/components/ex/feature-page';export default function Page(){return <FeaturePage kind="explore"/>}
+import {EnhancedExplore} from '@/components/ex/enhanced-explore';export default function Page(){return <EnhancedExplore/>}
