@@ -1,1 +1,1 @@
-import{EnhancedPostDetail}from'@/components/ex/enhanced-post-detail';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){return <EnhancedPostDetail postId={(await params).postId}/>}
+import{redirect}from'next/navigation';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){const p=await params;redirect(`/vx/${encodeURIComponent(p.username)}/status/${encodeURIComponent(p.postId)}`)}
