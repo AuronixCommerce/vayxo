@@ -1,1 +1,1 @@
-import {FeaturePage} from '@/components/ex/feature-page';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){const p=await params;return <FeaturePage kind="post" username={p.username} postId={p.postId}/>}
+import{PostDetailPage}from'@/components/ex/post-detail-page';export default async function Page({params}:{params:Promise<{username:string;postId:string}>}){return <PostDetailPage postId={(await params).postId}/>}
